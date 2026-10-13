@@ -7,7 +7,7 @@ Open Instagram, YouTube, LinkedIn or X and you see your assigned Linear issues w
 | Site | What gets replaced | What still works |
 |---|---|---|
 | Instagram | Home feed (below the stories) and the Reels tab | Stories, DMs, profiles, shared reels |
-| YouTube | Recommendations on the home page | Videos, search, subscriptions |
+| YouTube | Recommendations on the home page and in the sidebar next to videos | Videos, search, subscriptions, playlists, live chat |
 | LinkedIn | The feed column | Messages, profiles, jobs |
 | X | The home timeline, all tabs | Profiles, search, DMs, single posts |
 
@@ -31,6 +31,13 @@ Safari extensions have to be signed, so you build it yourself once:
 2. Run `./build-safari.sh`.
 3. Enable **LinearFeed** in Safari > Settings > Extensions, and allow it on instagram.com, youtube.com, linkedin.com, x.com and api.linear.app.
 4. Add your Linear API key as above.
+
+To update after a `git pull` or after changing files in `extension/`:
+
+1. Run `./build-safari.sh` again. It rebuilds and replaces `/Applications/LinearFeed.app`.
+2. Reload the open Instagram, YouTube, LinkedIn and X tabs.
+
+Your API key and settings stay. If Safari doesn't pick up the change, quit and reopen Safari.
 
 ## Notes
 

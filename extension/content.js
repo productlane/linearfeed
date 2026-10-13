@@ -35,9 +35,15 @@
     },
     {
       // Startseite: das Vorschlagsraster unter den Themen-Chips.
+      // Videoseite: die Vorschläge in der rechten Spalte. Playlist und Live-Chat bleiben.
       host: /(^|\.)youtube\.com$/,
-      active: () => location.pathname === "/",
+      active: () => location.pathname === "/" || location.pathname === "/watch",
       place: () => {
+        if (location.pathname === "/watch") {
+          const related = document.querySelector("ytd-watch-flexy #related");
+          if (!related) return null;
+          return { parent: related.parentElement, before: related, hide: [related], style: "margin: 0 0 16px;" };
+        }
         const grid = document.querySelector('ytd-browse[page-subtype="home"] ytd-rich-grid-renderer');
         const contents = grid?.querySelector(":scope > #contents") || grid?.querySelector("#contents");
         if (!contents) return null;

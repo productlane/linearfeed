@@ -6,6 +6,8 @@
   const MY_ISSUES_URL = "https://linear.app/productlane/my-issues/assigned";
   const TYPE_ORDER = { started: 0, unstarted: 1, backlog: 2, triage: 3 };
   const PRIO_ORDER = { 1: 0, 2: 1, 3: 2, 4: 3, 0: 4 };
+  // Anzeigenamen nur in der Extension, in Linear heißen die Status weiter so.
+  const GROUP_LABELS = { "In Progress": "Today", Todo: "This week", Backlog: "This month" };
 
   const STYLE = `
     :host {
@@ -21,6 +23,11 @@
       --faint: #9a9da3;
       --border: #e6e6e9;
       --urgent: #fc7840;
+      --focus-bg: #fff8dc;
+      --focus-hover: #fff3c4;
+      --focus-border: #f3d675;
+      --focus-text: #8a6200;
+      --focus-dot: #e8a800;
       margin: 0 0 16px;
     }
     :host([data-theme="dark"]) {
@@ -31,6 +38,11 @@
       --muted: #8a8d93;
       --faint: #62656b;
       --border: #2a2b2f;
+      --focus-bg: #2a2310;
+      --focus-hover: #322914;
+      --focus-border: #5c4a17;
+      --focus-text: #e8c25a;
+      --focus-dot: #e8b020;
     }
     * { box-sizing: border-box; }
     .wrap {
@@ -50,6 +62,17 @@
     .btn:hover { background: var(--hover); color: var(--text); }
     .btn.spin svg { animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    .focus {
+      display: block; margin: 10px 10px 4px; padding: 12px 14px;
+      border-radius: 8px; background: var(--focus-bg); border: 1px solid var(--focus-border);
+      color: inherit; text-decoration: none;
+    }
+    .focus:hover { background: var(--focus-hover); }
+    .focus-label { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 11px; font-weight: 500; letter-spacing: 0.02em; color: var(--focus-text); }
+    .focus-label i { width: 6px; height: 6px; border-radius: 50%; background: var(--focus-dot); }
+    .focus-row { display: flex; align-items: center; gap: 10px; }
+    .focus-row .title { font-size: 15px; }
 
     .list { padding: 6px; }
     .group {
@@ -215,6 +238,12 @@
         (a.state.type === "started" ? b.state.position - a.state.position : a.state.position - b.state.position),
     );
 
+    for (const g of sorted) {
+      g.issues.sort((a, b) => PRIO_ORDER[a.priority] - PRIO_ORDER[b.priority] || new Date(b.updatedAt) - new Date(a.updatedAt));
+    }
+    const top = sorted[0].issues.shift();
+    if (!sorted[0].issues.length) sorted.shift();
+
     const list = el("div", { class: "list" });
     for (const g of sorted) {
       const s = g.state;
@@ -223,16 +252,25 @@
         el("div", { class: `group ${closed ? "collapsed" : ""}`, style: `--sc: ${s.color}`, onclick: () => toggle(s) },
           el("span", { class: "chev", html: ICONS.chevron }),
           el("span", { class: "ico", html: stateIcon(s.type, s.color) }),
-          el("span", { class: "name" }, s.name),
+          el("span", { class: "name" }, GROUP_LABELS[s.name] ?? s.name),
           el("span", { class: "count" }, String(g.issues.length)),
         ),
       );
       if (closed) continue;
-      g.issues
-        .sort((a, b) => PRIO_ORDER[a.priority] - PRIO_ORDER[b.priority] || new Date(b.updatedAt) - new Date(a.updatedAt))
-        .forEach((i) => list.append(row(i)));
+      g.issues.forEach((i) => list.append(row(i)));
     }
-    return list;
+    return el("div", {}, focusCard(top), sorted.length ? list : null);
+  }
+
+  function focusCard(i) {
+    return el("a", { class: "focus", href: i.url, target: "_blank", rel: "noopener", title: `${i.identifier} ${i.title}` },
+      el("div", { class: "focus-label" }, el("i"), "Current focus"),
+      el("div", { class: "focus-row" },
+        el("span", { class: "ico", html: priorityIcon(i.priority) }),
+        el("span", { class: "title" }, i.title),
+        el("span", { class: "date" }, formatDate(i.createdAt)),
+      ),
+    );
   }
 
   function row(i) {
