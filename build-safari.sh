@@ -28,4 +28,16 @@ pluginkit -r "$APP/Contents/PlugIns/LinearFeed Extension.appex" 2>/dev/null || t
 rm -rf "$BUILD_DIR"
 
 open /Applications/LinearFeed.app
-echo "Installed. Now enable LinearFeed in Safari > Settings > Extensions."
+echo "Installed. If this is your first install, enable LinearFeed in Safari > Settings > Extensions."
+
+# Safari keeps the old extension code in memory until it restarts.
+if pgrep -xq Safari; then
+  read -r -p "Restart Safari now so the new version loads? Open windows come back. [y/N] " answer
+  if [[ "$answer" =~ ^[Yy]$ ]]; then
+    osascript -e 'quit app "Safari"'
+    while pgrep -xq Safari; do sleep 0.5; done
+    open -a Safari
+  else
+    echo "Quit Safari (Cmd+Q) and reopen it to load the new version."
+  fi
+fi

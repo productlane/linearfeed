@@ -35,9 +35,9 @@ Safari extensions have to be signed, so you build it yourself once:
 To update after a `git pull` or after changing files in `extension/`:
 
 1. Run `./build-safari.sh` again. It rebuilds and replaces `/Applications/LinearFeed.app`.
-2. Reload the open Instagram, YouTube, LinkedIn and X tabs.
+2. Restart Safari when the script asks. Safari keeps the old extension code in memory until it restarts, so reloading the page is not enough.
 
-Your API key and settings stay. If Safari doesn't pick up the change, quit and reopen Safari.
+Your API key and settings stay.
 
 ## Notes
 

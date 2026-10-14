@@ -1,1 +1,16 @@
-[data-ilr-hidden] { display: none !important; }
+/* Feeds zugeklappt verstecken statt mit display: none.
+   Bei display: none misst jeder Beitrag 0 Pixel. Endlos-Feeds wie X halten den
+   Bildschirm dann für leer und laden ohne Ende nach (CPU und Speicher laufen voll).
+   So behalten die Beiträge ihre echte Höhe, sind aber abgeschnitten und unsichtbar. */
+[data-ilr-hidden] {
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

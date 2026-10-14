@@ -4,6 +4,14 @@
   if (window.__ilrContent) return;
   window.__ilrContent = true;
 
+  // Nach einem Update der Extension lädt der Browser das Skript erneut in offene Tabs,
+  // während die alte Instanz weiterläuft. Die Seite merkt sich die neueste Instanz,
+  // alle älteren räumen ihre Liste weg und hören auf.
+  const instance = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  document.documentElement.dataset.ilrInstance = instance;
+  const isCurrent = () => document.documentElement.dataset.ilrInstance === instance;
+  const view = window.__ILR;
+
   const mainColumn = () => {
     const main = document.querySelector("main");
     if (!main) return null;
@@ -91,8 +99,13 @@
   }
 
   function update() {
+    if (!isCurrent()) {
+      clearInterval(timer);
+      view.getHost().remove();
+      return;
+    }
     const spot = site.active() ? site.place() : "off";
-    const host = window.__ILR.getHost();
+    const host = view.getHost();
 
     if (spot === "off") {
       host.remove();
@@ -115,11 +128,11 @@
     if (spot.style && host.style.cssText !== spot.style) host.style.cssText = spot.style;
 
     if (site.silenceVideos) silenceVideos();
-    window.__ILR.tick();
+    view.tick();
   }
 
   // Alle vier Seiten sind Single-Page-Apps: Wechsel passieren ohne Neuladen.
-  setInterval(update, 300);
+  const timer = setInterval(update, 300);
   window.addEventListener("popstate", update);
   document.addEventListener("DOMContentLoaded", update);
 })();
