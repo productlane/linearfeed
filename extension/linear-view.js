@@ -109,6 +109,13 @@
     .empty b { display: block; color: var(--text); font-size: 14px; font-weight: 500; margin-bottom: 6px; }
     .cta { all: unset; cursor: pointer; display: inline-block; margin-top: 14px; padding: 6px 12px; border-radius: 6px; background: #5e6ad2; color: #fff; font-weight: 500; }
 
+    .peace img { display: block; width: 100%; height: 220px; object-fit: cover; object-position: 60% 50%; }
+    .peace .text { padding: 22px 24px 26px; }
+    .peace .stat { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 14px; padding: 3px 10px 3px 6px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); font-size: 12px; }
+    .peace h2 { margin: 0 0 6px; font-size: 22px; line-height: 28px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+    .peace p { margin: 0; max-width: 46ch; color: var(--muted); font-size: 14px; line-height: 1.6; }
+    @container (max-width: 380px) { .peace img { height: 150px; } .peace .text { padding: 16px 16px 20px; } }
+
     @container (max-width: 480px) { .pills { display: none; } }
     @container (max-width: 380px) { .avatar, .date { display: none; } }
   `;
@@ -172,6 +179,10 @@
   let data = null;
   let loading = false;
   let lastLoad = 0;
+  let peaceImage = null;
+  let weekDone = null;
+  let peaceLoaded = false;
+  let lastWeekend = null;
   let avatar = null;
   let collapsed = {};
 
@@ -196,8 +207,43 @@
     render();
   }
 
+  // Samstag und Sonntag: Ruhe statt Issues.
+  const isWeekend = () => [0, 6].includes(new Date().getDay());
+
+  function weekStart() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d.toISOString();
+  }
+
+  function loadPeace() {
+    if (peaceLoaded) return;
+    peaceLoaded = true;
+    chrome.runtime.sendMessage({ type: "peace-image" }).then((src) => { peaceImage = src; render(); }).catch(() => {});
+    chrome.runtime.sendMessage({ type: "week-done", since: weekStart() }).then((n) => { weekDone = n; render(); }).catch(() => {});
+  }
+
+  const DONE_ICON = `<svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="7" fill="#5e6ad2"/><path d="M4.2 7.2 6.1 9l3.7-4" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+  function peace() {
+    loadPeace();
+    return el("div", { class: "wrap peace" },
+      peaceImage ? el("img", { src: peaceImage, alt: "A calm lake at dusk with mountains" }) : el("div", { style: "height: 220px; background: #232a55;" }),
+      el("div", { class: "text" },
+        weekDone > 0 ? el("div", { class: "stat" }, el("span", { class: "ico", html: DONE_ICON }), `${weekDone} ${weekDone === 1 ? "issue" : "issues"} done this week`) : null,
+        el("h2", {}, "Peace time"),
+        el("p", {}, "You achieved great things this week, time to recover so you can have a positive impact on people again next week."),
+      ),
+    );
+  }
+
   function render() {
     if (!root) return;
+    if (isWeekend()) {
+      root.replaceChildren(el("style", {}, STYLE), peace());
+      return;
+    }
     const wrap = el("div", { class: "wrap" },
       el("div", { class: "bar" },
         el("span", { class: "ico", html: ICONS.linear }),
@@ -344,6 +390,14 @@
     },
     // Lädt beim ersten Anzeigen und danach höchstens einmal pro Minute.
     tick() {
+      // Beim Wechsel ins oder aus dem Wochenende neu zeichnen.
+      const weekend = isWeekend();
+      if (weekend !== lastWeekend) {
+        lastWeekend = weekend;
+        peaceLoaded = weekend && peaceLoaded;
+        render();
+      }
+      if (weekend) return;
       if (!document.hidden && Date.now() - lastLoad > 60000) load();
     },
   };

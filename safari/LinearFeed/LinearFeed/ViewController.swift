@@ -2,7 +2,7 @@
 //  ViewController.swift
 //  LinearFeed
 //
-//  Created by Raphael Fleckenstein on 13.10.26.
+//  Created by Raphael Fleckenstein on 17.10.26.
 //
 
 import Cocoa

@@ -1,31 +1,60 @@
 {
   "manifest_version": 3,
   "name": "LinearFeed",
-  "version": "1.0",
-  "description": "Ersetzt die Feeds von Instagram, YouTube, LinkedIn und X durch deine Linear-Issues.",
-  "permissions": ["storage"],
+  "version": "1.1",
+  "description": "Ersetzt die Feeds von Instagram, YouTube, LinkedIn und X durch deine Linear-Issues. Zeigt im Productlane-Changelog den passenden Typefully-Post.",
+  "permissions": [
+    "storage"
+  ],
   "host_permissions": [
     "*://*.instagram.com/*",
     "*://*.youtube.com/*",
     "*://*.linkedin.com/*",
-    "*://x.com/*", "*://*.x.com/*", "*://twitter.com/*", "*://*.twitter.com/*",
+    "*://x.com/*",
+    "*://*.x.com/*",
+    "*://twitter.com/*",
+    "*://*.twitter.com/*",
     "https://api.linear.app/*",
     "https://*.linear.app/*",
-    "https://*.googleusercontent.com/*"
+    "https://*.googleusercontent.com/*",
+    "https://productlane.com/*",
+    "https://api.typefully.com/*"
   ],
-  "background": { "service_worker": "background.js" },
-  "options_ui": { "page": "options.html", "open_in_tab": true },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
   "content_scripts": [
     {
       "matches": [
         "*://*.instagram.com/*",
         "*://*.youtube.com/*",
         "*://*.linkedin.com/*",
-        "*://x.com/*", "*://*.x.com/*", "*://twitter.com/*", "*://*.twitter.com/*"
+        "*://x.com/*",
+        "*://*.x.com/*",
+        "*://twitter.com/*",
+        "*://*.twitter.com/*"
       ],
-      "js": ["linear-view.js", "content.js"],
-      "css": ["content.css"],
+      "js": [
+        "linear-view.js",
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://productlane.com/*"
+      ],
+      "js": [
+        "typefully-panel.js"
+      ],
+      "run_at": "document_idle"
     }
   ]
 }
