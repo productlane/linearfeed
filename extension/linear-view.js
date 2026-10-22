@@ -59,7 +59,19 @@
     .crumb { flex: 1; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .crumb b { color: var(--text); font-weight: 500; }
     .btn { all: unset; cursor: pointer; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; color: var(--muted); }
-    .btn:hover { background: var(--hover); color: var(--text); }
+    .btn:hover, .btn.on { background: var(--hover); color: var(--text); }
+    .menu-wrap { position: relative; }
+    .menu {
+      position: absolute; top: 32px; right: 0; z-index: 10; min-width: 200px; padding: 4px;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+    .menu button {
+      all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 8px;
+      width: 100%; padding: 6px 8px; border-radius: 6px; color: var(--text); white-space: nowrap;
+    }
+    .menu button:hover { background: var(--hover); }
+    .menu svg { color: var(--muted); flex: none; }
     .btn.spin svg { animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -121,6 +133,8 @@
   `;
 
   const ICONS = {
+    more: `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="13" cy="8" r="1.4"/></svg>`,
+    clock: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></svg>`,
     chevron: `<svg width="8" height="8" viewBox="0 0 8 8"><path d="M0.5 2h7L4 6.5z" fill="currentColor"/></svg>`,
     refresh: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M12.5 1.5v3h-3"/></svg>`,
     external: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5h4.5V7"/><path d="M13.5 2.5 7 9"/><path d="M12 9.5v3a1 1 0 0 1-1 1H3.5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3"/></svg>`,
@@ -186,11 +200,18 @@
   let avatar = null;
   let collapsed = {};
 
-  chrome.storage.local.get("ilrCollapsed").then((r) => {
+  // Pause für alle Seiten und Tabs, gespeichert als Zeitpunkt, bis zu dem der Feed sichtbar bleibt.
+  const PAUSE_MS = 5 * 60 * 1000;
+  let pausedUntil = 0;
+  let menuOpen = false;
+
+  chrome.storage.local.get(["ilrCollapsed", "ilrPausedUntil"]).then((r) => {
     collapsed = r.ilrCollapsed || {};
+    pausedUntil = r.ilrPausedUntil || 0;
     render();
   });
   chrome.storage.onChanged.addListener((changes) => {
+    if (changes.ilrPausedUntil) pausedUntil = changes.ilrPausedUntil.newValue || 0;
     if (changes.linearKey) {
       data = null;
       lastLoad = 0;
@@ -249,6 +270,17 @@
         el("span", { class: "ico", html: ICONS.linear }),
         el("span", { class: "crumb" }, el("b", {}, "My issues"), " › Assigned"),
         el("button", { class: `btn ${loading ? "spin" : ""}`, title: "Refresh", html: ICONS.refresh, onclick: load }),
+        el("span", { class: "menu-wrap" },
+          el("button", {
+            class: `btn ${menuOpen ? "on" : ""}`, title: "More", html: ICONS.more,
+            onclick: (e) => { e.stopPropagation(); menuOpen = !menuOpen; render(); },
+          }),
+          menuOpen
+            ? el("div", { class: "menu", onclick: (e) => e.stopPropagation() },
+                el("button", { onclick: pause }, el("span", { html: ICONS.clock }), "Disable for 5 minutes"),
+              )
+            : null,
+        ),
         el("a", { class: "btn", title: "Open in Linear", href: MY_ISSUES_URL, target: "_blank", rel: "noopener", html: ICONS.external }),
       ),
       body(),
@@ -376,7 +408,23 @@
     return matchMedia("(prefers-color-scheme: dark)").matches;
   }
 
+  function pause() {
+    menuOpen = false;
+    pausedUntil = Date.now() + PAUSE_MS;
+    chrome.storage.local.set({ ilrPausedUntil: pausedUntil });
+    render();
+  }
+
+  // Menü schließen bei Klick daneben.
+  document.addEventListener("click", () => {
+    if (menuOpen) {
+      menuOpen = false;
+      render();
+    }
+  });
+
   window.__ILR = {
+    isPaused: () => Date.now() < pausedUntil,
     getHost() {
       if (!host) {
         host = document.createElement("div");

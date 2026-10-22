@@ -104,7 +104,8 @@
       view.getHost().remove();
       return;
     }
-    const spot = site.active() ? site.place() : "off";
+    // "Disable for 5 minutes": Feed zeigen, Liste weg, bis die Pause abläuft.
+    const spot = site.active() && !view.isPaused() ? site.place() : "off";
     const host = view.getHost();
 
     if (spot === "off") {
